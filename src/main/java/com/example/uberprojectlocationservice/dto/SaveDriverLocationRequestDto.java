@@ -1,0 +1,14 @@
+package com.example.uberprojectlocationservice.dto;
+
+import lombok.*;
+
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class SaveDriverLocationRequestDto {
+    String driverId;
+    Double latitude;
+    Double longitude;
+}
