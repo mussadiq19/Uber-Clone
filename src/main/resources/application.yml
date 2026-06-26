@@ -1,0 +1,14 @@
+spring:
+    application:
+      name: UberServiceDIscovery
+
+server:
+  port: 8761
+
+eureka:
+  instance:
+    hostname: my-registry
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
