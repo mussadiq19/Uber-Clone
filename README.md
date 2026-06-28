@@ -1,228 +1,364 @@
-# Uber Ride Booking System - Frontend Application
+# 🚖 Uber Ride Booking Frontend
 
-A plain JavaScript frontend application for the Uber Ride Booking System that connects to WebSocket and REST API services. Supports both driver and passenger modes.
+A modern web frontend for the **Uber Ride Booking System**, built with **HTML, CSS, and Vanilla JavaScript**. This application communicates with a Spring Boot microservices backend through REST APIs and WebSockets to simulate a real-time ride-booking platform similar to Uber.
 
-## Features
+---
 
-### Driver Mode
-- Real-time WebSocket connection for receiving ride notifications
-- Accept/reject ride requests via WebSocket
-- View driver information and booking history
-- Optional location updates
+## 📖 Overview
 
-### Passenger Mode
-- Create new ride bookings via REST API
-- Track booking status with automatic polling
-- View booking history
-- Cancel bookings
+The frontend provides separate interfaces for **Passengers** and **Drivers**, enabling users to:
 
-## Prerequisites
+* Book rides
+* Update driver locations
+* Find nearby drivers
+* Receive ride requests in real time
+* Accept or reject ride requests
+* Track booking status
 
-- Modern web browser (Chrome, Firefox, Safari, Edge)
-- Backend services running:
-  - UberSocket service (WebSocket) - default port: 8082
-  - Uber REST API service - default port: 8080
+The application is designed to work seamlessly with the Uber Ride Booking Microservices architecture.
 
-## Installation
+---
 
-1. Clone or download this frontend folder
-2. No build step required - this is a static HTML/CSS/JavaScript application
-3. Serve the files using a web server
+## ✨ Features
 
-## Running the Application
+### 👤 Passenger
 
-### Option 1: Using a Local Web Server
+* Create a new ride booking
+* Search nearby available drivers
+* View active booking details
+* Cancel an existing booking
+* Real-time booking status updates
 
-#### Python 3
+### 🚗 Driver
+
+* Connect to WebSocket server
+* Update current GPS coordinates
+* Receive live ride requests
+* Accept ride requests
+* Reject ride requests
+* Automatically update booking status
+
+---
+
+## 🏗️ Architecture
+
+```text
+                    Passenger Frontend
+                           │
+                           ▼
+                   Booking Service
+                           │
+               ┌───────────┴───────────┐
+               ▼                       ▼
+      Location Service         Socket Service
+               │                       │
+               ▼                       ▼
+      Nearby Drivers          WebSocket Server
+                                       │
+                                       ▼
+                              Driver Frontend
+```
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+* HTML5
+* CSS3
+* JavaScript (ES6)
+* Fetch API
+* STOMP.js
+* SockJS
+
+### Backend
+
+* Spring Boot
+* Spring Web
+* Spring Data JPA
+* Hibernate
+* Retrofit
+* WebSockets
+* MySQL
+* Eureka Service Discovery
+
+---
+
+## 📂 Project Structure
+
+```text
+UberFrontend/
+│
+├── index.html
+│
+├── css/
+│   └── style.css
+│
+├── js/
+│   ├── config.js
+│   ├── api-client.js
+│   ├── websocket-client.js
+│   ├── passenger-handler.js
+│   └── driver-handler.js
+│
+└── assets/
+```
+
+---
+
+## 🚀 Getting Started
+
+### Clone the repository
+
 ```bash
-cd frontend
-python3 -m http.server 8000
+git clone https://github.com/mussadiq19/UberFrontend.git
 ```
 
-#### Node.js (http-server)
 ```bash
-npm install -g http-server
-cd frontend
-http-server -p 8000
+cd UberFrontend
 ```
 
-#### PHP
+---
+
+### Start the frontend server
+
+Using Python
+
 ```bash
-cd frontend
-php -S localhost:8000
+python -m http.server 8002
 ```
 
-### Option 2: Using VS Code Live Server
-1. Install "Live Server" extension in VS Code
-2. Right-click on `index.html`
-3. Select "Open with Live Server"
+or
 
-### Option 3: Direct File Access
-Simply open `index.html` in a web browser (note: some features may not work due to CORS restrictions)
-
-## Usage
-
-### Driver Mode
-
-Access the application with driver parameters:
-```
-http://localhost:8000/index.html?role=driver&driverId=1
+```bash
+python3 -m http.server 8002
 ```
 
-**Parameters:**
-- `role`: Must be `"driver"`
-- `driverId`: Integer ID of the driver
+---
 
-**Features:**
-- Automatically connects to WebSocket
-- Subscribes to ride notifications for the specified driver
-- Displays incoming ride requests in real-time
-- Allows accepting/rejecting rides
-- Shows booking history
+## 🌐 Access the Application
 
-### Passenger Mode
+### Passenger
 
-Access the application with passenger parameters:
-```
-http://localhost:8000/index.html?role=passenger&passengerId=1
+```text
+http://localhost:8002/index.html?role=passenger&passengerId=1
 ```
 
-**Parameters:**
-- `role`: Must be `"passenger"`
-- `passengerId`: Integer ID of the passenger
+### Driver
 
-**Features:**
-- Create new bookings with pickup/dropoff locations
-- View active booking status (auto-refreshes)
-- View booking history
-- Cancel bookings
+```text
+http://localhost:8002/index.html?role=driver&driverId=1
+```
 
-## Configuration
+Open both URLs in separate browser tabs to simulate the complete ride-booking flow.
 
-Edit `js/config.js` to configure service endpoints:
+---
+
+# 🔗 Backend Microservices
+
+The frontend depends on the following Spring Boot microservices.
+
+| Service                 | Repository                                                       |
+| ----------------------- | ---------------------------------------------------------------- |
+| Booking Service         | https://github.com/mussadiq19/UberProject-BookingService         |
+| Location Service        | https://github.com/mussadiq19/UberProject-LocationService        |
+| WebSocket Service       | https://github.com/mussadiq19/UberProject-WebSockets             |
+| Eureka Discovery Server | https://github.com/mussadiq19/UberProject-Discovery-EurekaServer |
+| Entity Service          | https://github.com/mussadiq19/UberProject-EntityService          |
+| Authentication Service  | https://github.com/mussadiq19/UberProject-AuthService            |
+| Review Service          | https://github.com/mussadiq19/UberProject-ReviewService          |
+
+---
+
+## 🔄 Ride Booking Flow
+
+```text
+Passenger
+
+      │
+
+      ▼
+
+Create Booking
+
+      │
+
+      ▼
+
+Booking Service
+
+      │
+
+      ▼
+
+Location Service
+
+      │
+
+      ▼
+
+Find Nearby Drivers
+
+      │
+
+      ▼
+
+Socket Service
+
+      │
+
+      ▼
+
+Driver receives Ride Request
+
+      │
+
+      ▼
+
+Accept / Reject Ride
+
+      │
+
+      ▼
+
+Booking Updated
+
+      │
+
+      ▼
+
+Passenger receives Status Update
+```
+
+---
+
+## 📡 API Services Used
+
+### Booking Service
+
+```
+POST /api/v1/booking
+```
+
+```
+POST /api/v1/booking/{bookingId}
+```
+
+---
+
+### Location Service
+
+```
+POST /api/location/drivers
+```
+
+```
+POST /api/location/nearby/drivers
+```
+
+---
+
+### Socket Service
+
+```
+POST /api/socket/newride
+```
+
+WebSocket Endpoint
+
+```
+/ws
+```
+
+---
+
+## ⚙️ Configuration
+
+The frontend endpoints are configured inside:
+
+```
+js/config.js
+```
+
+Example:
 
 ```javascript
-const AppConfig = {
-    websocket: {
-        baseUrl: 'http://localhost:8082',  // UberSocket service URL
-        endpoint: '/ws-uber',
-        reconnectAttempts: 5
-    },
-    api: {
-        baseUrl: 'http://localhost:8080',  // Uber REST API service URL
-        basePath: '/api',
-        timeout: 30000
-    }
+const CONFIG = {
+
+    BOOKING_API: "http://localhost:8000/api/v1",
+
+    LOCATION_API: "http://localhost:7777/api/location",
+
+    SOCKET_API: "http://localhost:8080/api/socket",
+
+    WEBSOCKET_URL: "http://localhost:8080/ws"
+
 };
 ```
 
-## File Structure
+---
 
-```
-frontend/
-├── index.html              # Main HTML file
-├── css/
-│   └── styles.css         # Application styles
-├── js/
-│   ├── config.js          # Configuration
-│   ├── utils.js           # Utility functions
-│   ├── api-client.js      # REST API client
-│   ├── websocket-client.js # WebSocket client
-│   ├── driver-handler.js  # Driver mode logic
-│   └── passenger-handler.js # Passenger mode logic
-└── README.md              # This file
-```
+## 📸 Demo Workflow
 
-## API Integration
+1. Start all backend microservices.
+2. Launch the frontend.
+3. Open the Passenger page.
+4. Open the Driver page.
+5. Driver updates location.
+6. Passenger searches nearby drivers.
+7. Passenger creates booking.
+8. Driver receives ride request instantly.
+9. Driver accepts the request.
+10. Booking status updates successfully.
 
-### REST API Endpoints Used
+---
 
-**Driver Endpoints:**
-- `GET /api/drivers/{id}` - Get driver details
-- `GET /api/bookings/driver/{driverId}` - Get driver bookings
-- `POST /api/v1/location/driverLocation` - Update driver location
+## 📋 Requirements
 
-**Passenger Endpoints:**
-- `GET /api/passengers/{passengerId}` - Get passenger details
-- `POST /api/bookings` - Create booking
-- `GET /api/bookings/{id}` - Get booking details
-- `GET /api/bookings/passenger/{passengerId}` - Get passenger bookings
-- `PUT /api/bookings/{id}` - Update booking
-- `PATCH /api/bookings/{id}/status` - Update booking status
-- `POST /api/v1/location/nearbyDrivers` - Find nearby drivers
+* Java 21+
+* Spring Boot Backend
+* MySQL
+* Python 3 (or any static web server)
+* Modern Browser
+* Internet connection (for CDN libraries)
 
-### WebSocket Integration
+---
 
-**Connection:**
-- Endpoint: `/ws-uber` (SockJS)
-- Protocol: STOMP over WebSocket
+## 🔮 Future Improvements
 
-**Driver Subscriptions:**
-- Topic: `/topic/new-ride/{driverId}` - Receive ride notifications
+* Google Maps integration
+* Live driver tracking
+* JWT Authentication
+* Payment Gateway
+* Fare Estimation
+* Driver Availability Toggle
+* Ride History
+* User Profiles
+* Booking Timeline
+* Responsive Mobile UI
+* Progressive Web App (PWA)
+* Push Notifications
 
-**Message Sending:**
-- Destination: `/app/ride-acceptance`
-- Payload: `{ driverId: number, bookingId: number }`
+---
 
-## Browser Compatibility
+## 🤝 Contributing
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+Contributions, issues, and feature requests are welcome.
 
-Requires:
-- ES6+ JavaScript support
-- WebSocket API support
-- Fetch API support
+If you have ideas to improve the project, feel free to fork the repository and submit a pull request.
 
-## Troubleshooting
+---
 
-### WebSocket Connection Issues
-- Ensure UberSocket service is running on the configured port
-- Check CORS settings on the backend
-- Verify the WebSocket endpoint URL in `config.js`
-- Check browser console for connection errors
+## 📜 License
 
-### REST API Issues
-- Ensure Uber REST API service is running
-- Verify the API base URL in `config.js`
-- Check CORS settings on the backend
-- Verify query parameters are correct
+This project was developed for educational purposes to demonstrate a complete **microservices-based ride booking system** using Spring Boot, REST APIs, Retrofit, WebSockets, and Vanilla JavaScript.
 
-### Invalid Query Parameters
-- Ensure `role` is either "driver" or "passenger"
-- Ensure `driverId` is provided when role=driver
-- Ensure `passengerId` is provided when role=passenger
-- IDs must be valid integers
+---
 
-## Development
+## 👨‍💻 Author
 
-### Adding New Features
-1. Follow the existing code structure
-2. Add new functions to appropriate handler files
-3. Update UI in `index.html` and `styles.css`
-4. Test in both driver and passenger modes
+**Mussadiq Fayaz Durani**
 
-### Debugging
-- Open browser developer tools (F12)
-- Check Console tab for errors and logs
-- Check Network tab for API requests
-- Check WebSocket connection in Network tab
-
-## Security Notes
-
-- This is a frontend-only application
-- No authentication/authorization is implemented
-- User IDs are passed via query parameters
-- For production, implement proper authentication
-- Use HTTPS in production environments
-
-## License
-
-This is a demonstration application for the Uber Ride Booking System.
-
-## Support
-
-For issues or questions, refer to the main project documentation or contact the development team.
-
+GitHub: https://github.com/mussadiq19
+GitHub Profile: https://github.com/mussadiq19

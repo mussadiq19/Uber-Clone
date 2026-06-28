@@ -1,168 +1,75 @@
 /**
- * REST API Client
- * REQ-API-001 through REQ-API-010
+ * API Client — matches actual backend endpoints exactly
+ *
+ * BookingService (8000):
+ *   POST /api/v1/booking               → createBooking
+ *   POST /api/v1/booking/{id}          → updateBooking
+ *
+ * LocationService (7777):
+ *   POST /api/location/drivers         → saveDriverLocation
+ *   POST /api/location/nearby/drivers  → getNearbyDrivers
  */
 
 const ApiClient = {
-    /**
-     * Make API request
-     * REQ-API-001, REQ-API-002, REQ-API-003, REQ-API-004, REQ-API-005
-     */
-    async request(endpoint, options = {}) {
-        const url = `${AppConfig.api.baseUrl}${AppConfig.api.basePath}${endpoint}`;
-        const defaultOptions = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            timeout: AppConfig.api.timeout
-        };
 
-        const config = { ...defaultOptions, ...options };
-
-        // Add body if present
-        if (config.body && typeof config.body === 'object') {
-            config.body = JSON.stringify(config.body);
-        }
-
+    async _post(baseUrl, path, body) {
+        const url = `${baseUrl}${path}`;
         try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), config.timeout);
-
-            const response = await fetch(url, {
-                ...config,
-                signal: controller.signal
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
             });
-
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw {
-                    status: response.status,
-                    statusText: response.statusText,
-                    message: errorData.message || `HTTP ${response.status}: ${response.statusText}`,
-                    data: errorData
-                };
-            }
-
-            const data = await response.json().catch(() => null);
+            const data = await res.json().catch(() => null);
+            if (!res.ok) throw { status: res.status, message: data?.message || `HTTP ${res.status}`, data };
             return { success: true, data };
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                throw { message: 'Request timeout', status: 408 };
-            }
-            throw error;
+        } catch (err) {
+            console.error(`POST ${url} failed:`, err);
+            throw err;
         }
     },
 
-    /**
-     * GET request
-     */
-    async get(endpoint) {
-        return this.request(endpoint, { method: 'GET' });
-    },
+    // ── Booking Service ──────────────────────────────────────────
 
-    /**
-     * POST request
-     * REQ-API-006
-     */
-    async post(endpoint, body) {
-        return this.request(endpoint, {
-            method: 'POST',
-            body: body
+    // POST /api/v1/booking
+    // Body: { passengerId, startLocation: { latitude, longitude }, endLocation: { latitude, longitude } }
+    // Returns: { bookingId, bookingStatus, driver }
+    createBooking(passengerId, startLat, startLng, endLat, endLng) {
+        return this._post(AppConfig.api.booking, '/api/v1/booking', {
+            passengerId,
+            startLocation: { latitude: startLat, longitude: startLng },
+            endLocation:   { latitude: endLat,   longitude: endLng   }
         });
     },
 
-    /**
-     * PUT request
-     */
-    async put(endpoint, body) {
-        return this.request(endpoint, {
-            method: 'PUT',
-            body: body
+    // POST /api/v1/booking/{bookingId}
+    // Body: { bookingStatus, driverId }
+    // Returns: { bookingId, status, driver }
+    updateBooking(bookingId, bookingStatus, driverId = null) {
+        return this._post(AppConfig.api.booking, `/api/v1/booking/${bookingId}`, {
+            bookingStatus,
+            driverId
         });
     },
 
-    /**
-     * PATCH request
-     */
-    async patch(endpoint, params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        const endpointWithParams = queryString ? `${endpoint}?${queryString}` : endpoint;
-        return this.request(endpointWithParams, { method: 'PATCH' });
-    },
+    // ── Location Service ─────────────────────────────────────────
 
-    /**
-     * DELETE request
-     */
-    async delete(endpoint) {
-        return this.request(endpoint, { method: 'DELETE' });
-    },
-
-    // Driver API Methods
-    // REQ-DRIVER-019, REQ-DRIVER-020, REQ-DRIVER-021
-    async getDriver(driverId) {
-        return this.get(`/drivers/${driverId}`);
-    },
-
-    // REQ-DRIVER-022, REQ-DRIVER-023, REQ-DRIVER-024
-    async getDriverBookings(driverId) {
-        return this.get(`/bookings/driver/${driverId}`);
-    },
-
-    // REQ-DRIVER-015, REQ-DRIVER-016, REQ-DRIVER-017
-    async updateDriverLocation(driverId, latitude, longitude) {
-        return this.post('/v1/location/driverLocation', {
-            driverId: driverId,
-            latitude: latitude,
-            longitude: longitude
+    // POST /api/location/drivers
+    // Body: { driverId, latitude, longitude }
+    saveDriverLocation(driverId, latitude, longitude) {
+        return this._post(AppConfig.api.location, '/api/location/drivers', {
+            driverId, latitude, longitude
         });
     },
 
-    // Passenger API Methods
-    // REQ-PASSENGER-023, REQ-PASSENGER-024, REQ-PASSENGER-025
-    async getPassenger(passengerId) {
-        return this.get(`/passengers/${passengerId}`);
-    },
-
-    // REQ-PASSENGER-003, REQ-PASSENGER-004
-    async createBooking(bookingData) {
-        return this.post('/bookings', bookingData);
-    },
-
-    // REQ-PASSENGER-007, REQ-PASSENGER-008
-    async getBooking(bookingId) {
-        return this.get(`/bookings/${bookingId}`);
-    },
-
-    // REQ-PASSENGER-012, REQ-PASSENGER-013
-    async getPassengerBookings(passengerId) {
-        return this.get(`/bookings/passenger/${passengerId}`);
-    },
-
-    // REQ-PASSENGER-015, REQ-PASSENGER-016
-    async updateBooking(bookingId, bookingData) {
-        return this.put(`/bookings/${bookingId}`, bookingData);
-    },
-
-    // REQ-PASSENGER-017, REQ-PASSENGER-018
-    async updateBookingStatus(bookingId, status) {
-        return this.patch(`/bookings/${bookingId}/status`, { status });
-    },
-
-    // REQ-PASSENGER-019, REQ-PASSENGER-020, REQ-PASSENGER-021
-    async getNearbyDrivers(latitude, longitude, radius) {
-        return this.post('/v1/location/nearbyDrivers', {
-            latitude: latitude,
-            longitude: longitude,
-            radius: radius
+    // POST /api/location/nearby/drivers
+    // Body: { latitude, longitude }
+    // Returns: List<DriverLocationDto>
+    getNearbyDrivers(latitude, longitude) {
+        return this._post(AppConfig.api.location, '/api/location/nearby/drivers', {
+            latitude, longitude
         });
     }
 };
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = ApiClient;
-}
-
+if (typeof module !== 'undefined' && module.exports) module.exports = ApiClient;
