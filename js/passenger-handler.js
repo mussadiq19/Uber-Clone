@@ -1,19 +1,15 @@
 /**
  * Passenger Handler
  * - Creates booking via POST /api/v1/booking
- *   Body: { passengerId, startLocation: { latitude, longitude }, endLocation: { latitude, longitude } }
- *   Response: { bookingId, bookingStatus, driver }
- *
- * - Updates booking via POST /api/v1/booking/{id}
- *   Body: { bookingStatus, driverId }
- *
+ * - Polls GET /api/v1/booking/{id} every 5s to reflect status changes
+ * - Cancels booking via POST /api/v1/booking/{id}
  * - Gets nearby drivers via POST /api/location/nearby/drivers
- *   Body: { latitude, longitude }
  */
 
 const PassengerHandler = {
     passengerId: null,
     activeBooking: null,
+    pollingInterval: null,
 
     init(passengerId) {
         this.passengerId = passengerId;
@@ -29,13 +25,46 @@ const PassengerHandler = {
             );
 
             if (res.success && res.data) {
-                // Response: { bookingId, bookingStatus, driver }
                 this.activeBooking = res.data;
                 this._showToast(`Booking #${res.data.bookingId} created — Status: ${res.data.bookingStatus}`, 'success');
                 this._renderActiveBooking();
+                this.startPolling(res.data.bookingId);
             }
         } catch (err) {
             this._showToast(err.message || 'Failed to create booking', 'error');
+        }
+    },
+
+    startPolling(bookingId) {
+        this.stopPolling();
+        console.log(`Polling booking #${bookingId} every 5s...`);
+        this.pollingInterval = setInterval(async () => {
+            try {
+                const res = await ApiClient.getBooking(bookingId);
+                if (res.success && res.data) {
+                    const prevStatus = this.activeBooking?.status;
+                    this.activeBooking = res.data;
+                    this._renderActiveBooking();
+
+                    if (prevStatus !== res.data.status) {
+                        this._showToast(`Status updated: ${res.data.status}`, 'info');
+                    }
+
+                    // Stop polling on final states
+                    if (['COMPLETED', 'CANCELLED'].includes(res.data.status)) {
+                        this.stopPolling();
+                    }
+                }
+            } catch (e) {
+                console.error('Polling error:', e);
+            }
+        }, 5000);
+    },
+
+    stopPolling() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
         }
     },
 
@@ -44,6 +73,7 @@ const PassengerHandler = {
         try {
             const res = await ApiClient.updateBooking(bookingId, 'CANCELLED');
             if (res.success) {
+                this.stopPolling();
                 this.activeBooking = null;
                 this._renderActiveBooking();
                 this._showToast('Booking cancelled', 'info');
@@ -74,6 +104,9 @@ const PassengerHandler = {
         }
 
         const b = this.activeBooking;
+        // GET returns { bookingId, status, driver }
+        // CREATE returns { bookingId, bookingStatus, driver }
+        const status = b.status || b.bookingStatus;
         const driver = b.driver || null;
 
         container.innerHTML = `
@@ -84,13 +117,13 @@ const PassengerHandler = {
                 </div>
                 <div class="booking-row">
                     <span class="label">Status</span>
-                    <span class="value status-badge ${b.bookingStatus?.toLowerCase()}">${b.bookingStatus}</span>
+                    <span class="value status-badge ${status?.toLowerCase()}">${status}</span>
                 </div>
                 <div class="booking-row">
                     <span class="label">Driver</span>
                     <span class="value">${driver ? driver.name || `Driver #${driver.id}` : 'Not assigned yet'}</span>
                 </div>
-                ${b.bookingStatus === 'PENDING' || b.bookingStatus === 'CONFIRMED' ? `
+                ${['PENDING', 'ASSIGNING_DRIVER', 'CONFIRMED'].includes(status) ? `
                 <div class="booking-actions">
                     <button class="btn btn-reject" onclick="PassengerHandler.cancelBooking(${b.bookingId})">Cancel Booking</button>
                 </div>` : ''}
@@ -129,6 +162,10 @@ const PassengerHandler = {
         toast.textContent = message;
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 4000);
+    },
+
+    cleanup() {
+        this.stopPolling();
     }
 };
 

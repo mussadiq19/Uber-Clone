@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In — Uber Ride Booking</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* ── Auth page — scoped additions, reuses the app's existing tokens
+               (--text-muted, --accent-red, .btn, .btn-primary, .section, .form-grid,
+               .form-group, .status-badge, .toast) where they already exist. Falls
+               back to sane defaults below in case styles.css doesn't define them. */
+        :root {
+            --auth-bg: #0b0d12;
+            --auth-surface: #12151c;
+            --auth-border: #232733;
+            --auth-text: #e6e8ee;
+            --auth-text-muted: #7c8394;
+            --auth-accent: #3ecf8e;
+            --auth-accent-dim: #2a3d35;
+            --auth-red: #e5484d;
+        }
+
+        * { box-sizing: border-box; }
+
+        body.auth-body {
+            min-height: 100vh;
+            margin: 0;
+            background: var(--auth-bg);
+            color: var(--auth-text);
+            font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+
+        .auth-shell {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .auth-brand {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .auth-brand .mark {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--auth-accent-dim);
+            color: var(--auth-accent);
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .auth-brand h1 {
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            margin: 0 0 4px;
+        }
+
+        .auth-brand p {
+            font-size: 12px;
+            color: var(--auth-text-muted);
+            margin: 0;
+        }
+
+        .auth-card {
+            background: var(--auth-surface);
+            border: 1px solid var(--auth-border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        /* role switch */
+        .role-switch {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .role-btn {
+            background: transparent;
+            border: 1px solid var(--auth-border);
+            color: var(--auth-text-muted);
+            border-radius: 8px;
+            padding: 10px 8px;
+            font: inherit;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            cursor: pointer;
+            transition: border-color .15s ease, color .15s ease, background .15s ease;
+        }
+
+        .role-btn.active {
+            border-color: var(--auth-accent);
+            color: var(--auth-accent);
+            background: var(--auth-accent-dim);
+        }
+
+        /* mode tabs (sign in / sign up) */
+        .mode-tabs {
+            display: flex;
+            gap: 18px;
+            border-bottom: 1px solid var(--auth-border);
+            margin-bottom: 20px;
+        }
+
+        .mode-tab {
+            background: none;
+            border: none;
+            color: var(--auth-text-muted);
+            font: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0 0 10px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .mode-tab.active {
+            color: var(--auth-text);
+            border-bottom-color: var(--auth-accent);
+        }
+
+        .auth-field {
+            margin-bottom: 14px;
+        }
+
+        .auth-field label {
+            display: block;
+            font-size: 11px;
+            color: var(--auth-text-muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.02em;
+        }
+
+        .auth-field input {
+            width: 100%;
+            background: #0d1017;
+            border: 1px solid var(--auth-border);
+            color: var(--auth-text);
+            border-radius: 7px;
+            padding: 10px 11px;
+            font: inherit;
+            font-size: 13px;
+            outline: none;
+            transition: border-color .15s ease;
+        }
+
+        .auth-field input:focus {
+            border-color: var(--auth-accent);
+        }
+
+        .auth-field input::placeholder {
+            color: #454b58;
+        }
+
+        .auth-submit {
+            width: 100%;
+            background: var(--auth-accent);
+            color: #06110b;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            margin-top: 4px;
+            transition: opacity .15s ease, transform .05s ease;
+        }
+
+        .auth-submit:hover { opacity: 0.92; }
+        .auth-submit:active { transform: scale(0.99); }
+
+        .auth-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-error {
+            display: none;
+            background: rgba(229, 72, 77, 0.1);
+            border: 1px solid rgba(229, 72, 77, 0.35);
+            color: var(--auth-red);
+            font-size: 12px;
+            border-radius: 7px;
+            padding: 10px 12px;
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+
+        .auth-footnote {
+            text-align: center;
+            font-size: 11px;
+            color: var(--auth-text-muted);
+            margin-top: 18px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 13px;
+            height: 13px;
+            border: 2px solid rgba(6, 17, 11, 0.35);
+            border-top-color: #06110b;
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            vertical-align: -2px;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .spinner { animation: none; }
+            .auth-submit { transition: none; }
+        }
+    </style>
+</head>
+<body class="auth-body">
+
+<div class="auth-shell">
+
+    <div class="auth-brand">
+        <div class="mark">U</div>
+        <h1>UBER RIDE BOOKING</h1>
+        <p id="auth-subtitle">Sign in to continue</p>
+    </div>
+
+    <div class="auth-card">
+
+        <div class="role-switch">
+            <button type="button" class="role-btn active" id="role-passenger-btn" onclick="AuthUI.setRole('PASSENGER')">PASSENGER</button>
+            <button type="button" class="role-btn" id="role-driver-btn" onclick="AuthUI.setRole('DRIVER')">DRIVER</button>
+        </div>
+
+        <div class="mode-tabs">
+            <button type="button" class="mode-tab active" id="tab-signin" onclick="AuthUI.setMode('signin')">Sign in</button>
+            <button type="button" class="mode-tab" id="tab-signup" onclick="AuthUI.setMode('signup')">Create account</button>
+        </div>
+
+        <div class="auth-error" id="auth-error"></div>
+
+        <form id="auth-form" onsubmit="return AuthUI.handleSubmit(event)">
+
+            <!-- signup-only fields -->
+            <div class="auth-field" id="field-name" style="display:none;">
+                <label for="input-name">Full name</label>
+                <input type="text" id="input-name" placeholder="e.g. Aisha Khan" autocomplete="name">
+            </div>
+            <div class="auth-field" id="field-phone" style="display:none;">
+                <label for="input-phone">Phone number</label>
+                <input type="tel" id="input-phone" placeholder="e.g. 9876543210" autocomplete="tel">
+            </div>
+
+            <div class="auth-field">
+                <label for="input-email">Email</label>
+                <input type="email" id="input-email" placeholder="you@example.com" autocomplete="email" required>
+            </div>
+
+            <div class="auth-field">
+                <label for="input-password">Password</label>
+                <input type="password" id="input-password" placeholder="••••••••" autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="auth-submit" id="auth-submit-btn">Sign in as passenger</button>
+        </form>
+
+        <p class="auth-footnote" id="auth-footnote">
+            New here? <a href="#" onclick="AuthUI.setMode('signup'); return false;" style="color:var(--auth-accent); text-decoration:none;">Create an account</a>
+        </p>
+
+    </div>
+</div>
+
+<script src="js/config.js"></script>
+<script src="js/api-client.js"></script>
+<script src="js/auth-handler.js"></script>
+
+</body>
+</html>

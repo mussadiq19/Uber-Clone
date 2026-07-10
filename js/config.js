@@ -11,6 +11,7 @@ const AppConfig = {
     api: {
         booking: 'http://localhost:8000',
         location: 'http://localhost:7777',
+        auth: 'http://localhost:6996',
     }
 };
 

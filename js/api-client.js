@@ -8,6 +8,17 @@
  * LocationService (7777):
  *   POST /api/location/drivers         → saveDriverLocation
  *   POST /api/location/nearby/drivers  → getNearbyDrivers
+ *
+ * AuthService (config.js -> AppConfig.api.auth):
+ *   POST /api/v1/auth/signup/passenger
+ *   POST /api/v1/auth/signup/driver
+ *   POST /api/v1/auth/signin           → { success, role, id }
+ *   GET  /api/v1/auth/validate
+ *
+ * NOTE: credentials: 'include' is set on every request so the httpOnly
+ * JwtToken cookie set by AuthService is sent along to every service.
+ * Every backend's CORS config must allow credentials from this origin
+ * (allowedOriginPatterns, not a literal "*", with allowCredentials(true)).
  */
 
 const ApiClient = {
@@ -18,6 +29,7 @@ const ApiClient = {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify(body)
             });
             const data = await res.json().catch(() => null);
@@ -27,6 +39,49 @@ const ApiClient = {
             console.error(`POST ${url} failed:`, err);
             throw err;
         }
+    },
+
+    async _get(baseUrl, path) {
+        const url = `${baseUrl}${path}`;
+        try {
+            const res = await fetch(url, { method: 'GET', credentials: 'include' });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) throw { status: res.status, message: data?.message, data };
+            return { success: true, data };
+        } catch (err) {
+            console.error(`GET ${url} failed:`, err);
+            throw err;
+        }
+    },
+
+    // ── Auth Service ─────────────────────────────────────────────
+
+    // POST /api/v1/auth/signin
+    // Body: { email, password }
+    // Returns: { success, role, id }  ← "id" requires the small AuthController
+    // change discussed: including the passenger/driver id in AuthResponseDto.
+    signIn(email, password) {
+        return this._post(AppConfig.api.auth, '/api/v1/auth/signin', { email, password });
+    },
+
+    // POST /api/v1/auth/signup/passenger
+    // Body: { email, name, phoneNumber, password }
+    signUpPassenger(email, name, phoneNumber, password) {
+        return this._post(AppConfig.api.auth, '/api/v1/auth/signup/passenger', {
+            email, name, phoneNumber, password
+        });
+    },
+
+    // POST /api/v1/auth/signup/driver
+    // Body: { email, name, phoneNumber, password }
+    signUpDriver(email, name, phoneNumber, password) {
+        return this._post(AppConfig.api.auth, '/api/v1/auth/signup/driver', {
+            email, name, phoneNumber, password
+        });
+    },
+
+    validateSession() {
+        return this._get(AppConfig.api.auth, '/api/v1/auth/validate');
     },
 
     // ── Booking Service ──────────────────────────────────────────
@@ -50,6 +105,9 @@ const ApiClient = {
             bookingStatus,
             driverId
         });
+    },
+    getBooking(bookingId) {
+        return this._get(AppConfig.api.booking, `/api/v1/booking/${bookingId}`);
     },
 
     // ── Location Service ─────────────────────────────────────────
