@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uber Ride Booking</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="header-content">
+        <h1>Uber Ride Booking</h1>
+        <div class="header-right">
+            <span id="role-badge" class="role-badge"></span>
+            <span id="user-id-label"></span>
+            <span id="connection-status" class="status-badge disconnected">DISCONNECTED</span>
+        </div>
+    </div>
+</header>
+
+<main class="app-main">
+
+    <!-- ══ DRIVER MODE ══════════════════════════════════════════════ -->
+    <div id="driver-mode" style="display:none;">
+
+        <!-- Connection -->
+        <div class="section">
+            <h2>Connection</h2>
+            <div class="connection-row">
+                <span>WebSocket:</span>
+                <span id="connection-status-text" class="status-badge disconnected">DISCONNECTED</span>
+            </div>
+            <p id="connection-message" style="font-size:12px; color:var(--text-muted); margin-top:8px;">
+                Connecting to server...
+            </p>
+        </div>
+
+        <!-- Update Location -->
+        <div class="section">
+            <h2>Update My Location</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <input type="number" id="driver-lat" step="any" placeholder="e.g. 34.0837">
+                </div>
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <input type="number" id="driver-lng" step="any" placeholder="e.g. 74.7973">
+                </div>
+                <div class="form-group full">
+                    <button class="btn btn-primary" onclick="
+                        DriverHandler.updateLocation(
+                            document.getElementById('driver-lat').value,
+                            document.getElementById('driver-lng').value
+                        )">Update Location</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ride Requests -->
+        <div class="section">
+            <h2>Incoming Ride Requests</h2>
+            <div id="ride-requests-container">
+                <p class="empty">Waiting for ride requests...</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══ PASSENGER MODE ═══════════════════════════════════════════ -->
+    <div id="passenger-mode" style="display:none;">
+
+        <!-- Create Booking -->
+        <div class="section">
+            <h2>Create Booking</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Pickup Latitude *</label>
+                    <input type="number" id="start-lat" step="any" placeholder="e.g. 34.0837" required>
+                </div>
+                <div class="form-group">
+                    <label>Pickup Longitude *</label>
+                    <input type="number" id="start-lng" step="any" placeholder="e.g. 74.7973" required>
+                </div>
+                <div class="form-group">
+                    <label>Dropoff Latitude *</label>
+                    <input type="number" id="end-lat" step="any" placeholder="e.g. 34.1000" required>
+                </div>
+                <div class="form-group">
+                    <label>Dropoff Longitude *</label>
+                    <input type="number" id="end-lng" step="any" placeholder="e.g. 74.8100" required>
+                </div>
+                <div class="form-group full">
+                    <button class="btn btn-primary" onclick="handleCreateBooking()">Book Ride</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Booking -->
+        <div class="section">
+            <h2>Active Booking</h2>
+            <div id="active-booking-container">
+                <p class="empty">No active booking.</p>
+            </div>
+        </div>
+
+        <!-- Nearby Drivers -->
+        <div class="section">
+            <h2>Find Nearby Drivers</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Latitude</label>
+                    <input type="number" id="search-lat" step="any" placeholder="e.g. 34.0837">
+                </div>
+                <div class="form-group">
+                    <label>Longitude</label>
+                    <input type="number" id="search-lng" step="any" placeholder="e.g. 74.7973">
+                </div>
+                <div class="form-group full">
+                    <button class="btn btn-primary" onclick="
+                        PassengerHandler.findNearbyDrivers(
+                            document.getElementById('search-lat').value,
+                            document.getElementById('search-lng').value
+                        )">Search Drivers</button>
+                </div>
+            </div>
+            <div id="nearby-drivers-container" style="margin-top:16px;"></div>
+        </div>
+
+    </div>
+
+    <!-- Error -->
+    <div id="error-container" style="display:none;" class="section">
+        <h2>Error</h2>
+        <p id="error-text" style="color:var(--accent-red); font-size:14px; white-space:pre-line;"></p>
+    </div>
+
+</main>
+
+<footer class="app-footer">
+    <p>Uber Ride Booking System</p>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api-client.js"></script>
+<script src="js/websocket-client.js"></script>
+<script src="js/driver-handler.js"></script>
+<script src="js/passenger-handler.js"></script>
+
+<script>
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const role = params.get('role');
+    const driverId = params.get('driverId');
+    const passengerId = params.get('passengerId');
+
+    function showError(msg) {
+        document.getElementById('error-container').style.display = 'block';
+        document.getElementById('error-text').textContent = msg;
+    }
+
+    if (!role || (role === 'driver' && !driverId) || (role === 'passenger' && !passengerId)) {
+        showError(
+            'Invalid URL. Use:\n' +
+            '  Driver:    ?role=driver&driverId=1\n' +
+            '  Passenger: ?role=passenger&passengerId=1'
+        );
+        return;
+    }
+
+    document.getElementById('role-badge').textContent = role.toUpperCase();
+
+    if (role === 'driver') {
+        document.getElementById('user-id-label').textContent = `Driver #${driverId}`;
+        document.getElementById('driver-mode').style.display = 'block';
+        DriverHandler.init(driverId);
+    } else if (role === 'passenger') {
+        document.getElementById('user-id-label').textContent = `Passenger #${passengerId}`;
+        document.getElementById('passenger-mode').style.display = 'block';
+        PassengerHandler.init(passengerId);
+    } else {
+        showError('Unknown role. Use "driver" or "passenger".');
+    }
+
+    window.addEventListener('beforeunload', () => WebSocketClient.disconnect());
+})();
+
+function handleCreateBooking() {
+    const startLat = document.getElementById('start-lat').value;
+    const startLng = document.getElementById('start-lng').value;
+    const endLat   = document.getElementById('end-lat').value;
+    const endLng   = document.getElementById('end-lng').value;
+
+    if (!startLat || !startLng || !endLat || !endLng) {
+        alert('All four coordinates are required.');
+        return;
+    }
+
+    PassengerHandler.createBooking(startLat, startLng, endLat, endLng);
+}
+</script>
+
+</body>
+</html>
