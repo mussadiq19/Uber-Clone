@@ -9,9 +9,9 @@ const AppConfig = {
         reconnectMaxDelay: 30000,
     },
     api: {
-        booking: 'http://localhost:8000',
-        location: 'http://localhost:7777',
-        auth: 'http://localhost:6996',
+        booking: 'http://localhost:6965',
+        location: 'http://localhost:6965',
+        auth: 'http://localhost:6965',
     }
 };
 
