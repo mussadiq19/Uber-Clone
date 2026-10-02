@@ -38,7 +38,7 @@ dependencies {
     implementation "io.jsonwebtoken:jjwt:0.13.0"
 
     //locally custom implementation
-    implementation 'com.example:UberProject-EntityService:0.0.8-SNAPSHOT'
+    implementation 'com.example:UberProject-EntityService:0.0.7-SNAPSHOT'
 }
 
 tasks.named('test') {

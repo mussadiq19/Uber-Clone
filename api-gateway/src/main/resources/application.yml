@@ -32,7 +32,7 @@ spring:
                 - Path=/ws/**
 
 server:
-  port: 6969
+  port: 6965
 
 eureka:
   client:

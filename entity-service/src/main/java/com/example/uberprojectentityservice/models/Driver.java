@@ -23,6 +23,12 @@ public class Driver extends BaseModel {
     private String phNo;
 
     @Column(nullable = false,unique = true)
+    private String email;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false,unique = true)
     private String licenceNumber;
 
     @OneToOne(mappedBy = "driver",cascade =CascadeType.ALL)

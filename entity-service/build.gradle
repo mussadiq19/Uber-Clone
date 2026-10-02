@@ -6,8 +6,9 @@ plugins {
 }
 
 group = 'com.example'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.7-SNAPSHOT'
 description = 'UberProject-EntityService'
+
 
 java {
     toolchain {
@@ -54,4 +55,13 @@ tasks.named('test') {
 }
 tasks.withType(GenerateModuleMetadata).configureEach {
     suppressedValidationErrors.add('dependencies-without-versions')
+}
+bootJar {
+    enabled = false
+}
+
+jar {
+    enabled = true
+    archiveClassifier = ''
+    exclude '**/application*.properties', '**/application*.yml', '**/application*.yaml'
 }
